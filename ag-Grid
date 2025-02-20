@@ -1,0 +1,66 @@
+import React, { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Table, TableHead, TableRow, TableCell, TableBody } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
+import { Loader } from "lucide-react";
+
+const SPREADSHEET_ID = "1nsDtWJVzivLCUucmu8RsZsIqviLcP25M8bC9GFYLPoU";
+const SHEET_NAME = "Form Responses 1"; // Change to the actual sheet name
+const API_KEY = "700863316481-knthvthqefi1i4bppuudf8hfhiipfqka.apps.googleusercontent.com";
+
+export default function Dashboard() {
+  const [data, setData] = useState([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`)
+      .then((res) => res.json())
+      .then((result) => {
+        if (result.values) {
+          const headers = result.values[0];
+          const rows = result.values.slice(1).map((row) =>
+            Object.fromEntries(headers.map((header, index) => [header, row[index] || ""]))
+          );
+          setData(rows);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const filteredData = data.filter((row) => row.Name?.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <Card>
+      <CardContent>
+        <Input
+          placeholder="Search by Name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="mb-4"
+        />
+        {loading ? (
+          <Loader className="animate-spin" />
+        ) : (
+          <Table>
+            <TableHead>
+              <TableRow>
+                {data.length > 0 && Object.keys(data[0]).map((key) => <TableCell key={key}>{key}</TableCell>)}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredData.map((row, index) => (
+                <TableRow key={index}>
+                  {Object.values(row).map((value, i) => (
+                    <TableCell key={i}>{value}</TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
